@@ -58,7 +58,11 @@ s_string("TRUN ");
 s_string_variable("FUZZ");
 ```
 
-open `vulnserver.exe` with Immunity Debugger, click `F9` to start the server, Then run the fuzzer from kali machine against VunlServer to identify potential buffer overflow:
+Open `vulnserver.exe` with Immunity Debugger, click `F9` to start the server.
+
+![fuzzing](Images/image1.5.png)
+
+Run the fuzzer from kali machine against VunlServer to identify potential buffer overflow:
 
 ```bash
 generic_send_tcp [VulnServer_IP] 9999 Fuzzer.spk 0 0
