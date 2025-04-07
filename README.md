@@ -78,13 +78,17 @@ Once we've confirmed the crash, we need to determine exactly where the crash occ
 
 After the applicatoin crashed. In the Debugger, `Right click` on `esp` value in Registers section > `Follow in Dump`, then you wanna Note :
 
-The first address the fuzzing begins with: (In my case ``)
+The first address the fuzzing begins with: (In my case `0x00AFF1F0`)
 
 ![crashpoint](Images/image3.png)
 
-The first address the fuzzing begins with: (In my case ``)
+The last address the fuzzing ends with: (In my case `0X00AFFD98`)
 
 ![crashpoint](Images/image4.png)
+
+Then do the math:
+
+![math](Images/image5.png)
 
 When we run this while monitoring the application in Immunity Debugger, we'll see it crash with EIP filled with "A"s (41414141 in hex), confirming we can control the instruction pointer.
 
