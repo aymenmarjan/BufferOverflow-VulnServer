@@ -76,19 +76,27 @@ Running this script, we'll see the application crash when we hit a certain buffe
 
 Once we've confirmed the crash, we need to determine exactly where the crash occurs.
 
-After the applicatoin crashed. In the Debugger, `Right click` on `esp` value in Registers section > `Follow in Dump`, then you wanna Note :
+After the applicatoin crashed. In the Debugger, `Right click` on `ESP` value in Registers section > `Follow in Dump`, then you wanna Note :
 
-The first address the fuzzing begins with: (In my case `0x00AFF1F0`)
+- The first address the fuzzing begins with: (In my case `0x00AFF1F0`)
 
 ![crashpoint](Images/image3.png)
 
-The last address the fuzzing ends with: (In my case `0X00AFFD98`)
+- The last address the fuzzing ends with: (In my case `0X00AFFD98`)
 
 ![crashpoint](Images/image4.png)
 
 Then do the math:
 
 ![math](Images/image5.png)
+
+So we've been able to make the application crash by fuzzing it with 2984 byte (A's).
+
+Lets try now to write our own python script that will crash the program, instead of using spike.
+
+```python
+
+```
 
 When we run this while monitoring the application in Immunity Debugger, we'll see it crash with EIP filled with "A"s (41414141 in hex), confirming we can control the instruction pointer.
 
