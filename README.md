@@ -39,7 +39,7 @@ In this project, we'll:
 
 ### Setting Up Immunity Debugger
 1. Download [Immunity Debugger](https://www.softpedia.com/get/Programming/Debuggers-Decompilers-Dissasemblers/Immunity-Debugger.shtml) and install it
-2. Install the Mona.py plugin by placing it in the PyCommands folder:
+2. Install the [Mona.py](https://github.com/aymenmarjan/BufferOverflow-VulnServer/blob/main/mona.py) plugin by placing it in the PyCommands folder:
    ```
    C:\Program Files (x86)\Immunity Inc\Immunity Debugger\PyCommands\
    ```
