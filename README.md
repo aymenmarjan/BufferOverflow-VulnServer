@@ -44,6 +44,8 @@ In this project, we'll:
    C:\Program Files (x86)\Immunity Inc\Immunity Debugger\PyCommands\
    ```
 
+![mona path](Images/image0.png)
+
 ## Step 1: Fuzzing the Application
 
 We'll start by creating a fuzzing script to identify if and where the vulnerability exists. While tools like SPIKE can be used, we'll create a simple Python script for better understanding:
@@ -56,7 +58,7 @@ import time
 
 # Create a TCP connection
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("10.0.0.98", 9999))
+s.connect(("192.168.177.130", 9999))
 
 # Initial banner
 data = s.recv(1024)
@@ -72,6 +74,8 @@ while buffer_length < 5000:
     buffer_length += 100
     time.sleep(0.5)
 ```
+
+[fuzzing](Images/image2)
 
 Running this script, we'll see the application crash when we hit a certain buffer length. This confirms the vulnerability exists and gives us a starting point.
 
