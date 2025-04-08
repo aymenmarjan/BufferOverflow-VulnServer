@@ -388,8 +388,6 @@ And that's it! We've successfully:
 
 This project demonstrates the classic buffer overflow exploitation technique in a controlled environment. Remember, these skills should only be used legally and ethically - such as in penetration testing with proper authorization.
 
-Feel free to experiment with different payloads, try to make your exploit more reliable, or explore other vulnerable functions in VulnServer!
-
 ## References
 - VulnServer project
 - Immunity Debugger and Mona documentation
