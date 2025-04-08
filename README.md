@@ -312,15 +312,15 @@ Now we'll build our final exploit with:
 
 ### Why Add a NOP Sled?
 
-A NOP sled (No Operation instructions) serves two important technical purposes:
+A NOP sled (0x90 instructions) helps in three key ways:
 
-1. **Memory Alignment**: Shellcode often requires proper alignment in memory. The NOP sled ensures that even if our calculations are slightly off, the processor will slide through the NOPs until it hits our shellcode.
+- Alignment: Ensures shellcode runs even if memory offsets are slightly off.
 
-2. **Stability Buffer**: Memory addresses can shift slightly between executions due to environment variables or system state. The NOP sled creates a "landing zone" that increases our chances of successful execution even with minor address variations.
+- Stability: Acts as a buffer for minor address shifts between executions.
 
-3. **Encoder Padding**: When shellcode is encoded to avoid bad characters, the decoder stub sometimes needs space to work. NOPs provide this safe padding.
+- Padding: Gives space for decoder stubs in encoded shellcode.
 
-Technically, each NOP (0x90) instruction tells the processor "do nothing and move to the next instruction," creating a smooth pathway to our shellcode.
+Each NOP tells the CPU to "do nothing," guiding execution smoothly to the shellcode.
 
 Generate shellcode with:
    
